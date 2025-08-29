@@ -1,0 +1,185 @@
+program ::= extern_list decl_list 
+          | decl_list
+FIRST(program) = {"extern", "int", "float", "bool", "void"}
+FOLLOW(program) = $
+
+extern_list ::= extern extern'_list
+extern'_list ::= extern extern'_list
+                | epsilon
+FIRST(extern_list) = "extern"
+FOLLOW(extern_list) = {"int", "float", "bool", "void"}
+
+extern ::= "extern" type_spec IDENT "(" params ")" ";"
+         | epsilon
+FIRST(extern) = "extern"
+
+decl_list ::= decl decl'_list
+decl'_list ::= decl decl'_list 
+             | epsilon
+FIRST(decl_list) = {"int", "float", "bool", "void"}
+FIRST(decl'_list) = {"int", "float", "bool", "void", "epsilon"}
+FOLLOW(decl'_list) = {"int", "float","bool","void",$}
+
+decl ::= var_decl
+       | fun_decl
+FIRST(decl) = {"int", "float", "bool", "void"}
+FOLLOW(decl) = FIRST(decl_list)
+
+decl ::= type_spec IDENT decl'
+decl' ::= ";"
+        | "(" params ")" block
+
+
+var_decl ::= var_type IDENT ";"
+FIRST(var_decl) = {"float", "int", "bool"}
+
+type_spec ::= "void"
+            | var_type
+FIRST(type_spec) = {"void", "float", "int", "bool"}
+FOLLOW(type_spec) = IDENT
+
+ var_type ::= "float" | "int" | "bool" 
+ FIRST(var_type) = {"float", "int", "bool"} 
+ FOLLOW(var_type) = IDENT
+
+ fun_decl ::= type_spec IDENT "(" params ")" block
+ FIRST(fun_decl) = {"float", "int", "bool", "void"}
+
+ params ::= param_list 
+         | "void"
+         | epsilon
+ FIRST(params) = {"void", "float", "int", "bool","epsilon"}
+ FOLLOW(params) = {")"} 
+
+ param_list ::= param param'_list
+ param'_list ::= "," param param'_list
+               | epsilon
+ FIRST(param_list) = {"float", "int", "bool"}
+ FIRST(param'_list) = {",", "epsilon"}
+ FOLLOW(param'_list) = {")"}
+
+ param ::= var_type IDENT 
+ FIRST(param) = {"float", "int", "bool"}
+
+ block ::= "{" local_decls stmt_list "}"
+ FIRST(block) = {"{"}
+
+ local_decls ::= local_decls'
+ local_decls' ::= local_decl local_decls'
+                | epsilon
+ FIRST(local_decls) = {"float", "int", "bool","epsilon"}
+ FOLLOW(local_decls) = {"{",IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT, ";","!","-","("}
+ FOLLOW(local_decls') = {";", "!", "-", ",", "(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT,"if", "while", "return"}
+
+ local_decl ::= var_type IDENT ";" 
+ FIRST(local_decl) = {"float", "int", "bool"}
+
+ stmt_list ::= stmt stmt'_list
+ stmt'_list ::= stmt stmt'_list
+             | epsilon
+ FIRST(stmt_list) = {"{", "if", "while", "return", "epsilon", ";", "!",IDENT,"(","-",INT_LIT, BOOL_LIT, FLOAT_LIT}
+ FOLLOW(stmt_list) = {"}"} 
+
+ stmt ::= expr_stmt
+       | block
+       | if_stmt
+       | while_stmt
+       | return_stmt
+ FIRST(stmt) = {";","!", "-", "(" ,IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT, "{","if", "while", "return"}
+ FOLLOW(stmt) = FIRST(stmt_list)
+
+ expr_stmt ::= expr ";"
+            | ";"
+ FIRST(expr_stmt) = {"!", "-", "(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT, ";"}
+ 
+ while_stmt ::= "while" "(" expr ")" stmt
+ FIRST(while_stmt) = {"while"}
+ 
+ if_stmt ::= "if" "(" expr ")" block else_stmt
+ FIRST(if_stmt) = {"if"}
+
+ else_stmt ::= "else" block
+            | epsilon
+ FIRST(else_stmt) = {"else"}
+ FOLLOW(else_stmt) = {"{", "if", "while", "return", ";", "!",IDENT,"(","-",INT_LIT, BOOL_LIT, FLOAT_LIT}
+
+ return_stmt ::= "return" returnp_stmt                       
+ FIRST(return_stmt) = {"return"}
+ 
+ returnp_stmt ::= expr ";"
+        | ";"
+
+  # operators in order of increasing precedence      
+ expr ::= IDENT "=" expr
+       | logor
+ FIRST(expr) = {"!", "-", "(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ 
+
+ logor ::= logand logor'
+ logor' ::= "||" logand logor'
+         | epsilon
+ FIRST(logor) = {"!","-","(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(logor') = {"||", ";", ")", ","}
+
+ logand ::= logeq logand'
+ logand' ::= "&&" logeq logand'
+          | epsilon
+ FIRST(logand) = {"!","-","(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(logand') = {"&&", ";", ")", ","}
+
+ logeq ::= relexpr logeq'
+ logeq' ::= "==" relexpr logeq'
+         | "!=" relexpr logeq'
+         | epsilon
+ FIRST(logeq) = {"!","-","(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(logeq') = {"==", "!=", ";", ")", ","}
+
+ relexpr ::= addmin relexpr'
+ relexpr' ::= "<=" addmin relexpr'
+           | "<" addmin relexpr'
+           | ">" addmin relexpr'
+           | ">=" addmin relexpr'
+           | epsilon
+ FIRST(relexpr) = {"!","-","(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(relexpr') = {"<=", "<", ">", ">=", ";", ")", ","}
+
+ addmin ::= multdiv addmin'
+ addmin' ::= "+" multdiv addmin'
+          | "-" multdiv addmin'
+          | epsilon
+ FIRST(addmin) = {"-","!", IDENT, "(", INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(addmin') = {"+", "-", "*", "/", "%","||","&&","==","!=",">=","<=","<",">",";",")",","}
+
+ multdiv ::= neg multdiv'
+ multdiv' ::= "*" neg multdiv'
+           | "/" neg multdiv'
+           | "%" neg multdiv'
+           | epsilon
+ FIRST(multdiv) = {"-","!", IDENT, "(", INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FOLLOW(multdiv') = {"+", "-", "*", "/", "%","||","&&","==","!=",">=","<=","<",">",";",")",","}
+
+ neg ::= "-" liter
+      | "!" liter
+      | liter
+ FIRST(neg) = {"-","!", IDENT, "(", INT_LIT, FLOAT_LIT, BOOL_LIT}
+
+ liter ::= INT_LIT | FLOAT_LIT | BOOL_LIT
+        | IDENT idCall
+        | "(" expr ")"
+ FIRST(liter) = {"(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+
+idCall ::= "(" args ")"
+        | epsilon
+
+
+ args ::= arg_list 
+        |  epsilon
+ FIRST(args) = {"!", "-", "(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT, "epsilon"}
+ FOLLOW(args) = {")"} 
+
+ arg_list ::= expr arg'_list 
+ arg'_list ::= "," expr arg'_list
+            | epsilon
+ FIRST(arg_list) = {"!", "-", "(", IDENT, INT_LIT, FLOAT_LIT, BOOL_LIT}
+ FIRST(arg'_list) = {",", "epsilon"}
+ FOLLOW(arg'_list) = {")"} 
