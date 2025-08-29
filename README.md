@@ -1,1 +1,1 @@
-Additional Projects Coming, need to trim them down to upload.
+Additional Projects Coming over the next few days, need to trim them down to upload.
